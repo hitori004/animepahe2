@@ -1,0 +1,190 @@
+/* styles.css */
+
+/* Allgemeine App-Stile */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Scrollbar-Anpassung für besseres Aussehen */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2d3748; /* gray-800 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a5568; /* gray-700 */
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #718096; /* gray-600 */
+}
+
+/* Sidebar Navigation */
+#sidebar a {
+    color: #e2e8f0; /* gray-200 */
+    text-decoration: none;
+}
+
+#sidebar a:hover {
+    background-color: #4a5568; /* gray-700 */
+}
+
+#sidebar a.active {
+    background-color: #553c9a; /* purple-700 */
+    color: white;
+    font-weight: 500;
+}
+
+/* Anime-Karten */
+.anime-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.anime-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+.anime-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.anime-card .title {
+    font-weight: 500;
+    margin-top: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Filter Panel */
+#filter-panel {
+    /* Animation für das Ein-/Ausblenden */
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+#filter-panel.show {
+    max-height: 500px; /* oder eine passende Höhe */
+    opacity: 1;
+}
+
+/* Playlist Bar */
+#playlist-bar.show {
+    display: flex;
+}
+
+/* Content Sections */
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+}
+
+/* Neue Styles für Detailansicht */
+#anime-detail-content img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Tab-Navigation (vereinfacht) */
+.content-tab {
+    display: none;
+}
+
+.content-tab.active {
+    display: block;
+}
+
+/* Anime-Karten-Grid auf Detailseite */
+#detail-anime-episodes {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#detail-anime-episodes li {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#detail-anime-episodes li:hover {
+    background-color: #374151; /* gray-700 */
+}
+
+/* Scrollbar für Episodenliste */
+#detail-anime-episodes {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937; /* thumb track */
+}
+
+#detail-anime-episodes::-webkit-scrollbar {
+    width: 8px;
+}
+
+#detail-anime-episodes::-webkit-scrollbar-track {
+    background: #1f2937; /* gray-800 */
+}
+
+#detail-anime-episodes::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* gray-700 */
+    border-radius: 4px;
+}
+
+/* Tabelle in der Detailansicht */
+#detail-anime-info td:first-child {
+    width: 30%; /* Breite der Label-Spalte */
+}
+
+/* Splash Screen */
+#splash-screen {
+    background-color: rgba(17, 24, 39, 0.95); /* Dunkleres Grau mit Transparenz */
+}
+
+/* Platzhalter für zukünftige Player-Integration */
+#webplayer-container {
+    width: 100%;
+    height: 400px; /* oder eine andere gewünschte Höhe */
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 50px; /* Kompakte Sidebar auf mobilen Geräten */
+    }
+    #sidebar .text {
+        display: none; /* Text ausblenden */
+    }
+    #sidebar a {
+        justify-content: center; /* Icons zentrieren */
+        padding: 1rem 0;
+    }
+    #sidebar a svg {
+        margin-right: 0;
+    }
+    #anime-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Kleinere Karten */
+    }
+}

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimePahe Streamer v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-900 text-white h-screen flex flex-col overflow-hidden">
+    <div id="splash-screen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
+        <div class="text-center">
+            <h1 class="text-4xl font-bold mb-4">AnimePahe Streamer v2.0</h1>
+            <p class="text-lg">Lade Anwendung...</p>
+        </div>
+    </div>
+
+    <div id="app" class="h-full flex flex-col hidden">
+        <header class="bg-gray-800 border-b border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <input id="search-input" type="text" placeholder="Anime suchen..." class="px-4 py-2 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-600">
+                    <button id="search-button" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg">Suchen</button>
+                    <button id="filter-toggle-button" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg">Filter</button>
+                </div>
+            </div>
+            <div id="filter-panel" class="mt-4 hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label for="filter-type" class="block text-sm font-medium">Typ</label>
+                        <select id="filter-type" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white">
+                            <option value="All">Alle</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-genre" class="block text-sm font-medium">Genre</label>
+                        <select id="filter-genre" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white">
+                            <option value="All">Alle</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-studio" class="block text-sm font-medium">Studio</label>
+                        <select id="filter-studio" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white">
+                            <option value="All">Alle</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-year" class="block text-sm font-medium">Jahr</label>
+                        <select id="filter-year" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white">
+                            <option value="All">Alle</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 flex space-x-2">
+                    <button id="filter-apply-button" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg">Anwenden</button>
+                    <button id="filter-reset-button" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">Zurücksetzen</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <nav class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+                <ul class="flex-1 p-4 space-y-2">
+                    <li>
+                        <a id="nav-home" href="#" class="nav-link flex items-center px-4 py-2 bg-gray-700 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                            </svg>
+                            Startseite
+                        </a>
+                    </li>
+                    <li>
+                        <a id="nav-favorites" href="#" class="nav-link flex items-center px-4 py-2 hover:bg-gray-700 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3.172 5.172a3 3 0 014.242 0L10 7.757l2.586-2.585a3 3 0 014.242 4.242l-2.586 2.586a1 1 0 01-1.414 0L10 9.414l-2.586 2.586a1 1 0 01-1.414 0l-2.586-2.586a3 3 0 010-4.242z" clip-rule="evenodd" />
+                            </svg>
+                            Favoriten
+                        </a>
+                    </li>
+                    <li>
+                        <a id="nav-settings" href="#" class="nav-link flex items-center px-4 py-2 hover:bg-gray-700 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                            </svg>
+                            Einstellungen
+                        </a>
+                    </li>
+                </ul>
+                <div class="p-4 border-t border-gray-700">
+                    <button id="quit-button" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+                        </svg>
+                        Beenden
+                    </button>
+                </div>
+            </nav>
+
+            <main id="main-content" class="flex-1 flex flex-col overflow-hidden bg-gray-900">
+                <div id="status-bar" class="px-4 py-2 text-sm bg-gray-800 border-b border-gray-700 flex justify-between items-center">
+                    <span id="status-message">Bereit</span>
+                    <span id="background-cache-status">Hintergrund-Cache: Inaktiv</span>
+                </div>
+
+                <div id="content-area" class="flex-1 overflow-y-auto p-4">
+                    <div id="home-content" class="content-section active">
+                        <h1 class="text-2xl font-bold mb-4">Startseite</h1>
+                        <p class="mb-4">Willkommen beim AnimePahe Streamer v2.0!</p>
+                        <div id="anime-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg animate-pulse">
+                                <div class="bg-gray-700 h-40"></div>
+                                <div class="p-2">
+                                    <div class="h-4 bg-gray-700 rounded mb-2"></div>
+                                    <div class="h-3 bg-gray-700 rounded w-3/4"></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg animate-pulse">
+                                <div class="bg-gray-700 h-40"></div>
+                                <div class="p-2">
+                                    <div class="h-4 bg-gray-700 rounded mb-2"></div>
+                                    <div class="h-3 bg-gray-700 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="favorites-content" class="content-section hidden">
+                        <h1 class="text-2xl font-bold mb-4">Favoriten</h1>
+                        <div id="favorites-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            <p class="col-span-full text-center py-10 text-gray-500">Keine Favoriten hinzugefügt.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="settings-content" class="content-section hidden">
+                        <h1 class="text-2xl font-bold mb-4">Einstellungen</h1>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="player-choice" class="block text-sm font-medium">Standard-Player</label>
+                                <select id="player-choice" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white">
+                                    <option value="mpv">MPV</option>
+                                    <option value="web">Webplayer</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="cache-interval" class="block text-sm font-medium">Cache-Intervall (Minuten)</label>
+                                <input id="cache-interval" type="number" min="1" value="5" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white">
+                            </div>
+                            <div>
+                                <button id="clear-cache-button" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg">Cache löschen</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="anime-detail-content" class="content-section hidden">
+                        <div class="mb-4">
+                            <button id="detail-back-button" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                                </svg>
+                                Zurück zur Suche
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="md:w-1/3 flex flex-col">
+                                <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg mb-4">
+                                    <img id="detail-anime-thumbnail" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlRodW1ibmFpbDwvdGV4dD48L3N2Zz4=" alt="Anime Thumbnail" class="w-full h-auto">
+                                </div>
+                                <div class="bg-gray-800 rounded-lg p-4 shadow-lg">
+                                    <h2 class="text-xl font-bold mb-2" id="detail-anime-title">Lade Anime...</h2>
+                                    <table class="w-full text-sm">
+                                        <tbody id="detail-anime-info">
+                                            <tr><td class="font-medium py-1">Typ:</td><td class="py-1 text-gray-300" id="detail-type">...</td></tr>
+                                            <tr><td class="font-medium py-1">Genre:</td><td class="py-1 text-gray-300" id="detail-genre">...</td></tr>
+                                            <tr><td class="font-medium py-1">Studio:</td><td class="py-1 text-gray-300" id="detail-studio">...</td></tr>
+                                            <tr><td class="font-medium py-1">Jahr:</td><td class="py-1 text-gray-300" id="detail-year">...</td></tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="mt-4 flex space-x-2">
+                                        <button id="detail-add-all-to-playlist" class="px-3 py-1 text-sm bg-purple-600 hover:bg-purple-700 rounded">Alle zur Playlist</button>
+                                        <button id="detail-play-all" class="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded">Alle abspielen</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="md:w-2/3 flex flex-col">
+                                <div class="flex border-b border-gray-700 mb-4">
+                                    <button class="px-4 py-2 font-medium text-purple-400 border-b-2 border-purple-400 focus:outline-none tab-button" data-tab="synopsis">Synopsis</button>
+                                    <button class="px-4 py-2 font-medium text-gray-400 hover:text-white focus:outline-none tab-button" data-tab="episodes">Episoden</button>
+                                </div>
+
+                                <div id="detail-tab-synopsis" class="content-tab active mb-6">
+                                    <div id="detail-anime-synopsis" class="prose prose-invert max-w-none">
+                                        <p>Lade Beschreibung...</p>
+                                    </div>
+                                </div>
+
+                                <div id="detail-tab-episodes" class="content-tab hidden">
+                                    <ul id="detail-anime-episodes" class="border border-gray-700 rounded-lg divide-y divide-gray-700 max-h-96 overflow-y-auto">
+                                        <li class="py-2 px-4 text-gray-500">Lade Episoden...</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="playlist-bar" class="h-32 bg-gray-800 border-t border-gray-700 hidden flex flex-col">
+            <div class="p-2 flex justify-between items-center border-b border-gray-700">
+                <span class="font-semibold">Playlist</span>
+                <div>
+                    <button id="playlist-clear-button" class="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded mr-2">Leeren</button>
+                    <button id="playlist-play-external-button" class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 rounded mr-2">Extern abspielen</button>
+                    <button id="playlist-play-web-button" class="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded">Webplayer</button>
+                </div>
+            </div>
+            <div id="playlist-items" class="flex-1 overflow-x-auto flex p-2 space-x-2">
+                <div class="flex-shrink-0 w-32 h-20 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-500">
+                    Keine Einträge
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/services/api.js"></script>
+    <script type="module" src="js/components/AnimeDetail.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
