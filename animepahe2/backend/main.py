@@ -1,3 +1,4 @@
+# backend/main.py
 import logging
 from fastapi import FastAPI, HTTPException, Query, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,28 +61,90 @@ async def search_anime(
 ):
     logger.info(f"Suche angefordert: q='{q}', type='{type}', genre='{genre}', studio='{studio}', year='{year}'")
     try:
-        api_results = []
-        if q:
-            logger.debug("Starte Suche auf AnimePahe-API...")
-            api_results = crawler.search_anime(q)
-            logger.debug(f"AnimePahe-API-Suche ergab {len(api_results)} Ergebnisse")
-        
-        logger.debug("Starte Suche im lokalen Cache...")
+        # 1) Zuerst: lokale DB abfragen (Cache-first)
+        logger.debug("Starte lokale Cache-Suche...")
         db_results = anime_cache_db.search_cached_anime(q, type, genre, studio, year)
         logger.debug(f"Cache-Suche ergab {len(db_results)} Ergebnisse")
-        
-        merged_dict = {anime["session"]: anime for anime in db_results}
-        for anime in api_results:
-            session_id = anime.get("session")
-            if session_id and session_id not in merged_dict:
-                merged_dict[session_id] = anime
-        
-        merged_list = list(merged_dict.values())
-        logger.info(f"Suche abgeschlossen. Insgesamt {len(merged_list)} eindeutige Ergebnisse.")
-        return merged_list
+
+        # Wenn DB Treffer vorhanden, liefere diese sofort (Cache-first Verhalten)
+        if db_results:
+            logger.info(f"Returniere {len(db_results)} Ergebnisse aus lokalem Cache für q='{q}'")
+            return db_results
+
+        # 2) Wenn keine DB-Treffer und ein Query vorhanden ist, versuche Remote-Crawler
+        api_results = []
+        if q:
+            logger.debug("Keine lokalen Treffer — versuche Crawler-Remote-Suche...")
+            try:
+                api_results = crawler.search_anime(q) or []
+                logger.debug(f"Crawler lieferte {len(api_results)} Ergebnisse")
+            except Exception as e:
+                # Crawler-Fehler dürfen nicht zu 500 im Frontend führen — loggen und fallbacken
+                logger.error(f"Crawler-Fehler bei Suche '{q}': {e}", exc_info=True)
+                api_results = []
+
+        # 3) Falls Remote Ergebnisse da sind, persistiere minimal in Cache und liefere DB-Ergebnisse zurück
+        if api_results:
+            # Normalisiere remote Ergebnisse in das minimale DB-Format
+            normalized = []
+            for r in api_results:
+                session = r.get("session") or r.get("id") or r.get("identifier") or r.get("slug")
+                title = r.get("title") or r.get("name") or "Unknown"
+                normalized.append({
+                    "session": session,
+                    "title": title,
+                    "thumbnail": r.get("thumbnail") or r.get("image"),
+                    "type": r.get("type"),
+                    "genre": r.get("genre") if isinstance(r.get("genre"), str) else (", ".join(r.get("genre")) if isinstance(r.get("genre"), (list, tuple)) else r.get("genre")),
+                    "studio": r.get("studio"),
+                    "year": r.get("year"),
+                    "synopsis": r.get("synopsis") or r.get("info"),
+                    "identifier": session,
+                    "source": "pahe"
+                })
+            try:
+                anime_cache_db.set_details_bulk(normalized)
+            except Exception as e:
+                logger.exception("Fehler beim Speichern der remote Ergebnisse in der DB (upsert), fahre trotzdem fort.")
+
+            # Frage erneut aus DB (damit Format & thumbnails konsistent sind)
+            try:
+                db_results = anime_cache_db.search_cached_anime(q, type, genre, studio, year)
+                logger.debug(f"Nach Persistierung: Cache-Suche ergab {len(db_results)} Ergebnisse")
+                return db_results
+            except Exception as e:
+                logger.exception("Fehler beim erneuten Lesen der DB nach Persistierung, gebe remote results direkt zurück")
+                # Fallback: entferne evtl. None/invalid Einträge und return
+                return [ { "session": r.get("session"), "title": r.get("title") } for r in api_results ]
+
+        # 4) Kein DB- und kein Remote-Result => leere Liste
+        logger.info("Keine Ergebnisse gefunden (lokal und remote).")
+        return []
+
     except Exception as e:
+        # Sicherheitsnetz: sollte selten eintreten
         logger.error(f"Fehler bei der Suche: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        # Liefere sauber 502 statt 500 mit Nachricht
+        raise HTTPException(status_code=502, detail="Fehler bei der Suche (Upstream/Cache) — siehe Server-Logs")
+
+@app.get("/api/anime/all")
+async def get_all_cached_anime(page: int = Query(default=1, ge=1, description="Seite der Ergebnisse"), limit: int = Query(default=20, ge=1, le=100, description="Anzahl der Ergebnisse pro Seite")):
+    """
+    Liefert alle gecachten Animes (paginiert).
+    Frontend nutzt das, wenn keine Suche / alle Filter = All sind.
+    """
+    try:
+        # Verwende die DB-Suchfunktion ohne Filter, um alle Einträge zu erhalten
+        all_results = anime_cache_db.search_cached_anime(query="", type_filter="All", genre_filter="All", studio_filter="All", year_filter="All")
+        total = len(all_results)  # Gesamtzahl der Anime
+        start = max(0, (page - 1) * limit)
+        end = start + limit
+        paged_results = all_results[start:end]
+        logger.info(f"Returniere {len(paged_results)} gecachte Animes (page={page}, limit={limit}, total={total})")
+        return {"results": paged_results, "total": total}
+    except Exception as e:
+        logger.exception(f"Fehler beim Abrufen aller gecachten Animes: {e}")
+        raise HTTPException(status_code=500, detail=f"Fehler beim Abrufen der Anime: {str(e)}")
 
 @app.get("/api/anime/{session}", response_model=AnimeDetails)
 async def get_anime_details(session: str):
@@ -130,8 +193,7 @@ async def get_stream_urls(request: StreamUrlsRequest):
     try:
         results = []
         for ep in request.episodes:
-            episode_url = f"{CONFIG['ANIMEPAHE_BASE_URL']}/play/{ep.session}/{ep.episode_session}"
-            m3u8_url = crawler.get_stream_url(episode_url)
+            m3u8_url = crawler.get_stream_url(ep.session, ep.episode_session)
             results.append({"title": f"Episode {ep.episode_session}", "m3u8_url": m3u8_url})
         return results
     except Exception as e:
@@ -143,8 +205,7 @@ async def play_external(request: StreamUrlsRequest):
     logger.info(f"Starte externen Player für {len(request.episodes)} Episoden")
     try:
         for ep in request.episodes:
-            episode_url = f"{CONFIG['ANIMEPAHE_BASE_URL']}/play/{ep.session}/{ep.episode_session}"
-            m3u8_url = crawler.get_stream_url(episode_url)
+            m3u8_url = crawler.get_stream_url(ep.session, ep.episode_session)
             player_cmd = CONFIG["PLAYER_COMMAND"] + [m3u8_url]
             subprocess.run(player_cmd, check=True)
         return {"status": "success"}

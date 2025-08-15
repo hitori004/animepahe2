@@ -21,7 +21,7 @@ CONFIG = {
     "PROACTIVE_CACHE_INTERVAL_MS": 120000,       # 2 Minuten (120.000 ms)
     # Für den CacheBuilder:
     "CACHE_BUILDER_INTERVAL_SEC": 300,           # 5 Minuten
-    "CACHE_BUILDER_LIMIT_PER_CYCLE": 10          # Wie viele fehlende Animes pro Zyklus verarbeitet werden
+    "CACHE_BUILDER_LIMIT_PER_CYCLE": 100          # Wie viele fehlende Animes pro Zyklus verarbeitet werden
 }
 
 # Stelle sicher, dass das Cache-Verzeichnis existiert

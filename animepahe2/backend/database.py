@@ -39,14 +39,20 @@ class AnimeCacheDB:
             logger.error(f"Fehler beim Initialisieren der Datenbank: {e}")
             raise
 
-    def _build_thumbnail_url(self, filename: Optional[str]) -> Optional[str]:
-        """Erstellt eine Thumbnail-URL basierend auf dem Dateinamen."""
-        if not filename:
+    def _build_thumbnail_url(self, thumb_input: Optional[str]) -> Optional[str]:
+        """Erstellt eine Thumbnail-URL basierend auf dem Input, prüft lokale Existenz."""
+        if not thumb_input:
             return None
+        # Extrahiere den Basenamen (z. B. 'xxx.png' aus '/cached_images/xxx.png' oder voller URL)
+        basename = os.path.basename(thumb_input)
         cache_dir = CONFIG.get("IMAGE_CACHE_DIR", "cached_images")
-        if os.path.exists(os.path.join(cache_dir, filename)):
-            return f"/cached_images/{filename}"
-        logger.warning(f"Thumbnail-Datei {filename} nicht im Cache gefunden.")
+        local_path = os.path.join(cache_dir, basename)
+        if os.path.exists(local_path):
+            return f"/cached_images/{basename}"
+        logger.warning(f"Thumbnail-Datei {local_path} nicht im Cache gefunden. Rückgabe der Original-URL falls vorhanden.")
+        # Wenn das Original eine URL oder relative Pfad ist, gib es zurück — besser für das Frontend
+        if isinstance(thumb_input, str) and (thumb_input.startswith("http") or thumb_input.startswith("/")):
+            return thumb_input
         return None
 
     def set_details_bulk(self, anime_details: List[Dict]):
@@ -54,13 +60,19 @@ class AnimeCacheDB:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                inserted_count = 0
                 for anime in anime_details:
+                    session_id = anime.get('session')
+                    if not session_id:
+                        logger.error(f"Keine Session-ID für Anime {anime.get('title')} gefunden. Überspringe Eintrag: {anime}")
+                        continue
+                    logger.debug(f"Speichere Anime: session={session_id}, title={anime.get('title')}, thumbnail={anime.get('thumbnail')}, identifier={anime.get('identifier')}")
                     cursor.execute("""
                         INSERT OR REPLACE INTO anime_cache (
                             session, title, thumbnail, type, genre, studio, year, synopsis, info, source, identifier
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
-                        anime.get("session"),
+                        session_id,
                         anime.get("title"),
                         self._build_thumbnail_url(anime.get("thumbnail")),
                         anime.get("type"),
@@ -72,8 +84,15 @@ class AnimeCacheDB:
                         anime.get("source", "pahe"),
                         anime.get("identifier")
                     ))
+                    inserted_count += 1
                 conn.commit()
-                logger.info(f"{len(anime_details)} Anime-Details erfolgreich in die Datenbank eingefügt.")
+                # Überprüfe, wie viele Einträge tatsächlich in der DB sind
+                cursor.execute("SELECT COUNT(*) FROM anime_cache")
+                count = cursor.fetchone()[0]
+                cursor.execute("SELECT session, title, identifier FROM anime_cache LIMIT 5")
+                sample_entries = cursor.fetchall()
+                logger.info(f"{inserted_count} Anime-Details erfolgreich in die Datenbank eingefügt. Gesamtanzahl Einträge: {count}")
+                logger.debug(f"Beispielhafte Einträge: {sample_entries}")
         except sqlite3.Error as e:
             logger.error(f"Fehler beim Speichern der Anime-Details: {e}")
             raise
@@ -174,9 +193,15 @@ class AnimeCacheDB:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT session FROM anime_cache")
+                cursor.execute("SELECT session FROM anime_cache WHERE session IS NOT NULL")
                 session_ids = [row[0] for row in cursor.fetchall()]
-                logger.debug(f"{len(session_ids)} Session-IDs im Cache gefunden.")
+                logger.debug(f"{len(session_ids)} Session-IDs im Cache gefunden: {session_ids[:10]}")
+                if not session_ids:
+                    cursor.execute("SELECT session, title, identifier FROM anime_cache LIMIT 5")
+                    sample_entries = cursor.fetchall()
+                    cursor.execute("SELECT COUNT(*) FROM anime_cache WHERE session IS NULL")
+                    null_count = cursor.fetchone()[0]
+                    logger.warning(f"Keine Session-IDs gefunden. Beispielhafte Einträge: {sample_entries}, Anzahl NULL-Session-Einträge: {null_count}")
                 return session_ids
         except sqlite3.Error as e:
             logger.error(f"Fehler beim Abrufen der Session-IDs: {e}")

@@ -169,6 +169,10 @@ body {
     margin-top: 1rem;
 }
 
+.hidden {
+    display: none;
+}
+
 /* Responsive Anpassungen */
 @media (max-width: 768px) {
     #sidebar {
